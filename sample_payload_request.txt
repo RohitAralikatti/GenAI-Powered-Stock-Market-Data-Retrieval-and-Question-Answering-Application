@@ -1,0 +1,52 @@
+1. /predict
+
+{
+  "features": {
+    "mvel1": 0.12,
+    "beta": 1.05,
+    "betasq": 1.10,
+    "chmom": -0.02,
+    "dolvol": 0.34,
+    "idiovol": 0.15,
+    "indmom": 0.05,
+    "mom1m": 0.02,
+    "mom6m": 0.12,
+    "mom12m": 0.25
+  }
+}
+
+
+2. /explain
+
+{
+  "features": {
+    "mvel1": 0.12,
+    "beta": 1.05,
+    "betasq": 1.10,
+    "chmom": -0.02,
+    "dolvol": 0.34,
+    "idiovol": 0.15,
+    "indmom": 0.05,
+    "mom1m": 0.02,
+    "mom6m": 0.12,
+    "mom12m": 0.25
+  }
+}
+
+
+3. /analyze
+
+{
+  "features": {
+    "mvel1": 0.12,
+    "beta": 1.05,
+    "betasq": 1.10,
+    "chmom": -0.02,
+    "dolvol": 0.34,
+    "idiovol": 0.15,
+    "indmom": 0.05,
+    "mom1m": 0.02,
+    "mom6m": 0.12,
+    "mom12m": 0.25
+  }
+}

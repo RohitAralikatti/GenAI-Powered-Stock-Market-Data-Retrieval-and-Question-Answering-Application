@@ -1,0 +1,19 @@
+# Python env
+venv/
+__pycache__/
+*.pyc
+
+# Node
+node_modules/
+dist/
+
+# Data (do NOT commit)
+data/
+datasets/
+data_processed/
+*.csv
+*.parquet
+
+# Logs & env
+.env
+*.log
