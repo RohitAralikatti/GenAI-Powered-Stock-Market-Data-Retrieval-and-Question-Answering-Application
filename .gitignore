@@ -17,3 +17,6 @@ data_processed/
 # Logs & env
 .env
 *.log
+
+# RAG vector store (regenerated on first run)
+backend/langchain_engine/chroma_db/

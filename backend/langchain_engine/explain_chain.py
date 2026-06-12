@@ -1,57 +1,71 @@
 from langchain_core.prompts import PromptTemplate
+
+from .feature_descriptions import describe_feature
 from .llama_client import get_llm
-from .vectorstore import get_vectorstore
+from .vectorstore import get_vectorstore, retrieve_context
 
 """
-This module generates natural-language explanations for model predictions
-using your local Llama 3.1 model via Ollama.
+Generates natural-language explanations for model predictions using a
+local Llama 3.1 model via Ollama, grounded with context retrieved from a
+ChromaDB vector store of financial concept documents (RAG).
 """
-
-# ---------------------------------------------------------
-# PROMPT TEMPLATE
-# ---------------------------------------------------------
 
 EXPLAIN_PROMPT = """
-You are a financial analysis assistant.
+You are a financial analysis assistant explaining a machine learning
+prediction to a portfolio manager.
 
-A machine learning model predicted: {prediction_value}
+Prediction: {direction} (confidence: {confidence})
 
-Explain in simple, clear terms why this prediction *might* have occurred,
-based on the following features:
+Top contributing factors:
+{feature_lines}
 
-{feature_info}
+SHAP summary: {shap_summary}
 
-Your explanation must be:
-- easy to understand for a finance student,
-- concise,
-- based on logical reasoning,
-- NOT overly confident (no guaranteed statements).
+Background on these kinds of factors:
+{retrieved_context}
 
-Begin your explanation now:
+Write a concise, professional explanation of why the model likely made
+this prediction. Use plain language, avoid jargon, and do not make
+guaranteed statements about future performance.
 """
 
 prompt = PromptTemplate(
-    input_variables=["prediction_value", "feature_info"],
-    template=EXPLAIN_PROMPT
+    input_variables=["direction", "confidence", "feature_lines", "shap_summary", "retrieved_context"],
+    template=EXPLAIN_PROMPT,
 )
 
-# ---------------------------------------------------------
-# MAIN FUNCTION
-# ---------------------------------------------------------
 
-def generate_explanation(prediction_value: float, feature_info: str):
+def generate_rag_explanation(prediction: int, probabilities, top_features, shap_summary: str) -> str:
     """
-    Sends the prompt to Llama 3.1 and returns the generated explanation.
+    Builds a RAG-grounded prompt from the prediction, top SHAP features,
+    and relevant financial-concept documents, then sends it to Llama 3.1
+    via Ollama.
     """
-    llm = get_llm()
+    prob_0, prob_1 = probabilities
+    confidence = f"{max(prob_0, prob_1):.1%}"
+    direction = "outperformance" if prediction == 1 else "underperformance"
 
-    # Format prompt
-    final_prompt = prompt.format(
-        prediction_value=prediction_value,
-        feature_info=feature_info
+    feature_lines = "\n".join(
+        f"- {describe_feature(f['feature'])} "
+        f"({'pushes toward outperformance' if f['shap_value'] > 0 else 'pushes toward underperformance'}, "
+        f"impact {f['shap_value']:+.4f})"
+        for f in top_features[:5]
     )
 
-    # Generate explanation
+    query_text = "; ".join(describe_feature(f["feature"]) for f in top_features[:5])
+    collection = get_vectorstore()
+    context_docs = retrieve_context(collection, query_text, k=3)
+    retrieved_context = "\n\n".join(context_docs) if context_docs else "No additional context retrieved."
+
+    final_prompt = prompt.format(
+        direction=direction,
+        confidence=confidence,
+        feature_lines=feature_lines,
+        shap_summary=shap_summary,
+        retrieved_context=retrieved_context,
+    )
+
+    llm = get_llm()
     response = llm.invoke(final_prompt)
 
-    return response
+    return response.strip()

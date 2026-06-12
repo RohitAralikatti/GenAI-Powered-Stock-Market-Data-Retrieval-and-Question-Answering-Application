@@ -64,13 +64,15 @@
 
 
 
-export async function analyzeFeatures(payload) {
+import { buildFeatures } from "./featureMapping";
+
+export async function analyzeFeatures({ scenario, risk, horizon }) {
   const res = await fetch("http://localhost:8000/analyze", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ features: buildFeatures(scenario, risk, horizon) }),
   });
 
   if (!res.ok) {

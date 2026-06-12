@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 from .preprocess import preprocess_row, load_artifacts
 from .predict import predict_proba_and_label
+from .langchain_engine.llama_client import generate_explanation
 
 router = APIRouter(tags=["Explain"])
 
@@ -69,17 +70,24 @@ def explain(body: SampleInput):
     X_df = preprocess_row(body.features)
     preds, probs = predict_proba_and_label(model, X_df)
 
-    top_features, shap_summary = shap_explain_single(
+    shap_res = shap_explain_single(
         explainer,
         model,
         X_df.values,
         feature_names
     )
 
+    llm_explanation = generate_explanation(
+        prediction=preds[0],
+        probabilities=probs[0],
+        top_features=shap_res["top_features"],
+        shap_summary=shap_res["shap_summary"],
+    )
+
     return {
         "prediction": int(preds[0]),
         "probabilities": probs[0].tolist(),
-        "top_features": top_features,        # ✅ REAL LIST
-        "shap_summary": shap_summary,         # ✅ REAL STRING
-        "llm_explanation": shap_summary       # ✅ TEMP: same text
+        "top_features": shap_res["top_features"],
+        "shap_summary": shap_res["shap_summary"],
+        "llm_explanation": llm_explanation,
     }
